@@ -291,22 +291,24 @@
     <div class="container">
         <div class="header">
             <h1>🛠️ MCP Server Generator</h1>
-            <p>Generate Windows PowerShell installation commands for Claude MCP servers</p>
+            <p>Generate installation commands for Claude MCP servers with Local, HTTP, and SSE transport support</p>
         </div>
 
         <div class="info-box">
-            <h3>💡 Windows PowerShell Compatibility</h3>
-            <p>This tool generates commands optimized for Windows PowerShell with proper JSON escaping and cmd.exe wrapping for maximum compatibility.</p>
+            <h3>💡 Multiple Transport Support</h3>
+            <p>This tool supports generating commands for Local servers (with Windows PowerShell JSON config), HTTP transport servers, and SSE (Server-Sent Events) transport servers with custom headers.</p>
         </div>
 
         <div class="preset-section">
             <h3>📋 Quick Presets</h3>
             <p>Click a preset to auto-fill common MCP servers:</p>
             <div class="preset-buttons">
-                <button class="preset-btn" onclick="loadPreset('perplexity')">Perplexity AI</button>
-                <button class="preset-btn" onclick="loadPreset('exa')">Exa Search</button>
-                <button class="preset-btn" onclick="loadPreset('puppeteer')">Puppeteer</button>
-                <button class="preset-btn" onclick="loadPreset('context7')">Context7</button>
+                <button class="preset-btn" onclick="loadPreset('perplexity')">Perplexity AI (Local)</button>
+                <button class="preset-btn" onclick="loadPreset('exa')">Exa Search (Local)</button>
+                <button class="preset-btn" onclick="loadPreset('puppeteer')">Puppeteer (Local)</button>
+                <button class="preset-btn" onclick="loadPreset('context7')">Context7 (Local)</button>
+                <button class="preset-btn" onclick="loadPreset('http-example')">HTTP Server (Example)</button>
+                <button class="preset-btn" onclick="loadPreset('sse-example')">SSE Server (Example)</button>
             </div>
         </div>
 
@@ -314,10 +316,24 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label for="serverName">🏷️ Server Name</label>
-                    <input type="text" id="serverName" placeholder="e.g., perplexity, exa, puppeteer" required>
+                    <input type="text" id="serverName" placeholder="e.g., perplexity, exa, api-server" required>
                 </div>
 
                 <div class="form-group">
+                    <label for="transportType">🚀 Transport Type</label>
+                    <select id="transportType">
+                        <option value="local">Local Server (JSON Config)</option>
+                        <option value="http">HTTP Transport</option>
+                        <option value="sse">SSE Transport</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="urlGroup" style="display: none;">
+                    <label for="serverUrl">🌐 Server URL</label>
+                    <input type="url" id="serverUrl" placeholder="https://api.example.com/mcp">
+                </div>
+
+                <div class="form-group" id="baseCommandGroup">
                     <label for="baseCommand">⚡ Base Command</label>
                     <select id="baseCommand">
                         <option value="npx">npx (Node Package Runner)</option>
@@ -333,7 +349,7 @@
                 </div>
             </div>
 
-            <div class="args-section">
+            <div class="args-section" id="argsSection">
                 <div class="section-title">
                     🔧 Arguments
                     <button type="button" class="add-btn" onclick="addArgument()">+ Add Argument</button>
@@ -346,13 +362,23 @@
                 </div>
             </div>
 
-            <div class="env-section">
+            <div class="env-section" id="envSection">
                 <div class="section-title">
                     🌍 Environment Variables
                     <button type="button" class="add-btn" onclick="addEnvVar()">+ Add Variable</button>
                 </div>
                 <div id="envVarsList">
                     <!-- Environment variables will be added here -->
+                </div>
+            </div>
+
+            <div class="env-section" id="headersSection" style="display: none;">
+                <div class="section-title">
+                    📡 HTTP Headers
+                    <button type="button" class="add-btn" onclick="addHeader()">+ Add Header</button>
+                </div>
+                <div id="headersList">
+                    <!-- Headers will be added here -->
                 </div>
             </div>
 
@@ -374,27 +400,53 @@
         const presets = {
             perplexity: {
                 serverName: 'perplexity',
+                transportType: 'local',
                 baseCommand: 'npx',
                 arguments: ['server-perplexity-ask'],
-                env: { 'PERPLEXITY_API_KEY': 'your-api-key-here' }
+                env: { 'PERPLEXITY_API_KEY': 'your-api-key-here' },
+                headers: {}
             },
             exa: {
                 serverName: 'exa',
+                transportType: 'local',
                 baseCommand: 'npx',
                 arguments: ['-y', 'mcp-remote', 'https://mcp.exa.ai/mcp?exaApiKey=your-api-key-here'],
-                env: {}
+                env: {},
+                headers: {}
             },
             puppeteer: {
                 serverName: 'puppeteer',
+                transportType: 'local',
                 baseCommand: 'npx',
                 arguments: ['@modelcontextprotocol/server-puppeteer'],
-                env: {}
+                env: {},
+                headers: {}
             },
             context7: {
                 serverName: 'context7',
+                transportType: 'local',
                 baseCommand: 'npx',
                 arguments: ['@upstash/context7-mcp'],
-                env: {}
+                env: {},
+                headers: {}
+            },
+            'http-example': {
+                serverName: 'http-server',
+                transportType: 'http',
+                serverUrl: 'https://api.example.com/mcp',
+                baseCommand: 'npx',
+                arguments: [],
+                env: {},
+                headers: { 'Authorization': 'Bearer your-token' }
+            },
+            'sse-example': {
+                serverName: 'sse-server',
+                transportType: 'sse',
+                serverUrl: 'https://example.com/sse-endpoint',
+                baseCommand: 'npx',
+                arguments: [],
+                env: {},
+                headers: { 'X-API-Key': 'your-key' }
             }
         };
 
@@ -403,7 +455,12 @@
             if (!preset) return;
 
             document.getElementById('serverName').value = preset.serverName;
+            document.getElementById('transportType').value = preset.transportType;
             document.getElementById('baseCommand').value = preset.baseCommand;
+            
+            if (preset.serverUrl) {
+                document.getElementById('serverUrl').value = preset.serverUrl;
+            }
 
             // Clear existing arguments
             document.getElementById('argumentsList').innerHTML = '';
@@ -421,6 +478,15 @@
                 addEnvVarWithValues(key, value);
             });
 
+            // Clear existing headers
+            document.getElementById('headersList').innerHTML = '';
+            
+            // Add preset headers
+            Object.entries(preset.headers).forEach(([key, value]) => {
+                addHeaderWithValues(key, value);
+            });
+
+            toggleTransportType();
             toggleCustomCommand();
         }
 
@@ -428,6 +494,32 @@
             const baseCommand = document.getElementById('baseCommand').value;
             const customGroup = document.getElementById('customCommandGroup');
             customGroup.style.display = baseCommand === 'custom' ? 'block' : 'none';
+        }
+
+        function toggleTransportType() {
+            const transportType = document.getElementById('transportType').value;
+            const urlGroup = document.getElementById('urlGroup');
+            const baseCommandGroup = document.getElementById('baseCommandGroup');
+            const customCommandGroup = document.getElementById('customCommandGroup');
+            const argsSection = document.getElementById('argsSection');
+            const envSection = document.getElementById('envSection');
+            const headersSection = document.getElementById('headersSection');
+
+            if (transportType === 'local') {
+                urlGroup.style.display = 'none';
+                baseCommandGroup.style.display = 'block';
+                argsSection.style.display = 'block';
+                envSection.style.display = 'block';
+                headersSection.style.display = 'none';
+                toggleCustomCommand();
+            } else {
+                urlGroup.style.display = 'block';
+                baseCommandGroup.style.display = 'none';
+                customCommandGroup.style.display = 'none';
+                argsSection.style.display = 'none';
+                envSection.style.display = 'none';
+                headersSection.style.display = 'block';
+            }
         }
 
         function addArgument() {
@@ -461,6 +553,22 @@
             envVarsList.appendChild(div);
         }
 
+        function addHeader() {
+            addHeaderWithValues('', '');
+        }
+
+        function addHeaderWithValues(key, value) {
+            const headersList = document.getElementById('headersList');
+            const div = document.createElement('div');
+            div.className = 'dynamic-item';
+            div.innerHTML = `
+                <input type="text" placeholder="Header Name (e.g., Authorization)" name="headerKey" value="${key}">
+                <input type="text" placeholder="Header Value (e.g., Bearer token)" name="headerValue" value="${value}">
+                <button type="button" class="remove-btn" onclick="removeItem(this)">×</button>
+            `;
+            headersList.appendChild(div);
+        }
+
         function removeItem(button) {
             button.parentElement.remove();
         }
@@ -472,52 +580,81 @@
                 return;
             }
 
-            let baseCommand = document.getElementById('baseCommand').value;
-            if (baseCommand === 'custom') {
-                baseCommand = document.getElementById('customCommand').value.trim();
-                if (!baseCommand) {
-                    alert('Please enter a custom command');
+            const transportType = document.getElementById('transportType').value;
+            let command = '';
+
+            if (transportType === 'local') {
+                // Generate local server command (existing logic)
+                let baseCommand = document.getElementById('baseCommand').value;
+                if (baseCommand === 'custom') {
+                    baseCommand = document.getElementById('customCommand').value.trim();
+                    if (!baseCommand) {
+                        alert('Please enter a custom command');
+                        return;
+                    }
+                }
+
+                // Collect arguments
+                const argumentInputs = document.querySelectorAll('input[name="argument"]');
+                const args = ['/c', baseCommand];
+                argumentInputs.forEach(input => {
+                    if (input.value.trim()) {
+                        args.push(input.value.trim());
+                    }
+                });
+
+                // Collect environment variables
+                const envKeys = document.querySelectorAll('input[name="envKey"]');
+                const envValues = document.querySelectorAll('input[name="envValue"]');
+                const envVars = {};
+                
+                for (let i = 0; i < envKeys.length; i++) {
+                    const key = envKeys[i].value.trim();
+                    const value = envValues[i].value.trim();
+                    if (key && value) {
+                        envVars[key] = value;
+                    }
+                }
+
+                // Build JSON configuration
+                const config = {
+                    command: 'cmd',
+                    args: args
+                };
+
+                if (Object.keys(envVars).length > 0) {
+                    config.env = envVars;
+                }
+
+                // Generate the command with proper escaping
+                const jsonConfig = JSON.stringify(config);
+                const escapedJson = jsonConfig.replace(/"/g, '\\"');
+                
+                command = `cmd /c 'claude mcp add-json ${serverName} "${escapedJson}" -s user'`;
+
+            } else {
+                // Generate HTTP or SSE transport command
+                const serverUrl = document.getElementById('serverUrl').value.trim();
+                if (!serverUrl) {
+                    alert('Please enter a server URL');
                     return;
                 }
-            }
 
-            // Collect arguments
-            const argumentInputs = document.querySelectorAll('input[name="argument"]');
-            const args = ['/c', baseCommand];
-            argumentInputs.forEach(input => {
-                if (input.value.trim()) {
-                    args.push(input.value.trim());
-                }
-            });
+                // Start building command
+                command = `claude mcp add --transport ${transportType} ${serverName} ${serverUrl}`;
 
-            // Collect environment variables
-            const envKeys = document.querySelectorAll('input[name="envKey"]');
-            const envValues = document.querySelectorAll('input[name="envValue"]');
-            const envVars = {};
-            
-            for (let i = 0; i < envKeys.length; i++) {
-                const key = envKeys[i].value.trim();
-                const value = envValues[i].value.trim();
-                if (key && value) {
-                    envVars[key] = value;
+                // Collect headers
+                const headerKeys = document.querySelectorAll('input[name="headerKey"]');
+                const headerValues = document.querySelectorAll('input[name="headerValue"]');
+                
+                for (let i = 0; i < headerKeys.length; i++) {
+                    const key = headerKeys[i].value.trim();
+                    const value = headerValues[i].value.trim();
+                    if (key && value) {
+                        command += ` --header "${key}: ${value}"`;
+                    }
                 }
             }
-
-            // Build JSON configuration
-            const config = {
-                command: 'cmd',
-                args: args
-            };
-
-            if (Object.keys(envVars).length > 0) {
-                config.env = envVars;
-            }
-
-            // Generate the command with proper escaping
-            const jsonConfig = JSON.stringify(config);
-            const escapedJson = jsonConfig.replace(/"/g, '\\"');
-            
-            const command = `cmd /c 'claude mcp add-json ${serverName} "${escapedJson}" -s user'`;
 
             document.getElementById('outputCommand').value = command;
             
@@ -559,11 +696,15 @@
 
         // Event listeners
         document.getElementById('baseCommand').addEventListener('change', toggleCustomCommand);
+        document.getElementById('transportType').addEventListener('change', toggleTransportType);
 
-        // Initialize with one empty argument
+        // Initialize with one empty argument and set initial transport type
         if (document.getElementById('argumentsList').children.length === 0) {
             addArgument();
         }
+        
+        // Initialize transport type display
+        toggleTransportType();
     </script>
 </body>
 </html> 
