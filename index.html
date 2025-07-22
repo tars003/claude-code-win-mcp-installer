@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Server Installation Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        input, textarea, select {
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .args-section, .env-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+        }
+
+        .section-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .add-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .dynamic-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .dynamic-item input {
+            flex: 1;
+        }
+
+        .remove-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            min-width: 40px;
+            transition: all 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+
+        .generate-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .output-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .output-title {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .copy-btn {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+        }
+
+        .copy-btn.copied {
+            background: #28a745;
+        }
+
+        .output-command {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            border: none;
+            resize: none;
+            width: 100%;
+            min-height: 100px;
+        }
+
+        .preset-section {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 2px solid #bbdefb;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .preset-btn {
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .preset-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+
+        .info-box h3 {
+            color: #856404;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            color: #856404;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .dynamic-item {
+                flex-direction: column;
+            }
+
+            .preset-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛠️ MCP Server Generator</h1>
+            <p>Generate Windows PowerShell installation commands for Claude MCP servers</p>
+        </div>
+
+        <div class="info-box">
+            <h3>💡 Windows PowerShell Compatibility</h3>
+            <p>This tool generates commands optimized for Windows PowerShell with proper JSON escaping and cmd.exe wrapping for maximum compatibility.</p>
+        </div>
+
+        <div class="preset-section">
+            <h3>📋 Quick Presets</h3>
+            <p>Click a preset to auto-fill common MCP servers:</p>
+            <div class="preset-buttons">
+                <button class="preset-btn" onclick="loadPreset('perplexity')">Perplexity AI</button>
+                <button class="preset-btn" onclick="loadPreset('exa')">Exa Search</button>
+                <button class="preset-btn" onclick="loadPreset('puppeteer')">Puppeteer</button>
+                <button class="preset-btn" onclick="loadPreset('context7')">Context7</button>
+            </div>
+        </div>
+
+        <form id="mcpForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="serverName">🏷️ Server Name</label>
+                    <input type="text" id="serverName" placeholder="e.g., perplexity, exa, puppeteer" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="baseCommand">⚡ Base Command</label>
+                    <select id="baseCommand">
+                        <option value="npx">npx (Node Package Runner)</option>
+                        <option value="node">node (Direct Node.js)</option>
+                        <option value="python">python (Python Script)</option>
+                        <option value="custom">Custom Command</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="customCommandGroup" style="display: none;">
+                    <label for="customCommand">Custom Command</label>
+                    <input type="text" id="customCommand" placeholder="Enter custom command">
+                </div>
+            </div>
+
+            <div class="args-section">
+                <div class="section-title">
+                    🔧 Arguments
+                    <button type="button" class="add-btn" onclick="addArgument()">+ Add Argument</button>
+                </div>
+                <div id="argumentsList">
+                    <div class="dynamic-item">
+                        <input type="text" placeholder="e.g., server-perplexity-ask, --port, 3000" name="argument">
+                        <button type="button" class="remove-btn" onclick="removeItem(this)">×</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="env-section">
+                <div class="section-title">
+                    🌍 Environment Variables
+                    <button type="button" class="add-btn" onclick="addEnvVar()">+ Add Variable</button>
+                </div>
+                <div id="envVarsList">
+                    <!-- Environment variables will be added here -->
+                </div>
+            </div>
+
+            <button type="button" class="generate-btn" onclick="generateCommand()">
+                🚀 Generate Installation Command
+            </button>
+        </form>
+
+        <div class="output-section">
+            <div class="output-header">
+                <span class="output-title">📋 Generated Command</span>
+                <button class="copy-btn" id="copyBtn" onclick="copyToClipboard()">📋 Copy</button>
+            </div>
+            <textarea class="output-command" id="outputCommand" readonly placeholder="Click 'Generate Installation Command' to create your MCP server installation command..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        const presets = {
+            perplexity: {
+                serverName: 'perplexity',
+                baseCommand: 'npx',
+                arguments: ['server-perplexity-ask'],
+                env: { 'PERPLEXITY_API_KEY': 'your-api-key-here' }
+            },
+            exa: {
+                serverName: 'exa',
+                baseCommand: 'npx',
+                arguments: ['-y', 'mcp-remote', 'https://mcp.exa.ai/mcp?exaApiKey=your-api-key-here'],
+                env: {}
+            },
+            puppeteer: {
+                serverName: 'puppeteer',
+                baseCommand: 'npx',
+                arguments: ['@modelcontextprotocol/server-puppeteer'],
+                env: {}
+            },
+            context7: {
+                serverName: 'context7',
+                baseCommand: 'npx',
+                arguments: ['@upstash/context7-mcp'],
+                env: {}
+            }
+        };
+
+        function loadPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+
+            document.getElementById('serverName').value = preset.serverName;
+            document.getElementById('baseCommand').value = preset.baseCommand;
+
+            // Clear existing arguments
+            document.getElementById('argumentsList').innerHTML = '';
+            
+            // Add preset arguments
+            preset.arguments.forEach(arg => {
+                addArgumentWithValue(arg);
+            });
+
+            // Clear existing environment variables
+            document.getElementById('envVarsList').innerHTML = '';
+            
+            // Add preset environment variables
+            Object.entries(preset.env).forEach(([key, value]) => {
+                addEnvVarWithValues(key, value);
+            });
+
+            toggleCustomCommand();
+        }
+
+        function toggleCustomCommand() {
+            const baseCommand = document.getElementById('baseCommand').value;
+            const customGroup = document.getElementById('customCommandGroup');
+            customGroup.style.display = baseCommand === 'custom' ? 'block' : 'none';
+        }
+
+        function addArgument() {
+            addArgumentWithValue('');
+        }
+
+        function addArgumentWithValue(value) {
+            const argumentsList = document.getElementById('argumentsList');
+            const div = document.createElement('div');
+            div.className = 'dynamic-item';
+            div.innerHTML = `
+                <input type="text" placeholder="e.g., server-perplexity-ask, --port, 3000" name="argument" value="${value}">
+                <button type="button" class="remove-btn" onclick="removeItem(this)">×</button>
+            `;
+            argumentsList.appendChild(div);
+        }
+
+        function addEnvVar() {
+            addEnvVarWithValues('', '');
+        }
+
+        function addEnvVarWithValues(key, value) {
+            const envVarsList = document.getElementById('envVarsList');
+            const div = document.createElement('div');
+            div.className = 'dynamic-item';
+            div.innerHTML = `
+                <input type="text" placeholder="Variable Name (e.g., API_KEY)" name="envKey" value="${key}">
+                <input type="text" placeholder="Variable Value (e.g., your-key-here)" name="envValue" value="${value}">
+                <button type="button" class="remove-btn" onclick="removeItem(this)">×</button>
+            `;
+            envVarsList.appendChild(div);
+        }
+
+        function removeItem(button) {
+            button.parentElement.remove();
+        }
+
+        function generateCommand() {
+            const serverName = document.getElementById('serverName').value.trim();
+            if (!serverName) {
+                alert('Please enter a server name');
+                return;
+            }
+
+            let baseCommand = document.getElementById('baseCommand').value;
+            if (baseCommand === 'custom') {
+                baseCommand = document.getElementById('customCommand').value.trim();
+                if (!baseCommand) {
+                    alert('Please enter a custom command');
+                    return;
+                }
+            }
+
+            // Collect arguments
+            const argumentInputs = document.querySelectorAll('input[name="argument"]');
+            const args = ['/c', baseCommand];
+            argumentInputs.forEach(input => {
+                if (input.value.trim()) {
+                    args.push(input.value.trim());
+                }
+            });
+
+            // Collect environment variables
+            const envKeys = document.querySelectorAll('input[name="envKey"]');
+            const envValues = document.querySelectorAll('input[name="envValue"]');
+            const envVars = {};
+            
+            for (let i = 0; i < envKeys.length; i++) {
+                const key = envKeys[i].value.trim();
+                const value = envValues[i].value.trim();
+                if (key && value) {
+                    envVars[key] = value;
+                }
+            }
+
+            // Build JSON configuration
+            const config = {
+                command: 'cmd',
+                args: args
+            };
+
+            if (Object.keys(envVars).length > 0) {
+                config.env = envVars;
+            }
+
+            // Generate the command with proper escaping
+            const jsonConfig = JSON.stringify(config);
+            const escapedJson = jsonConfig.replace(/"/g, '\\"');
+            
+            const command = `cmd /c 'claude mcp add-json ${serverName} "${escapedJson}" -s user'`;
+
+            document.getElementById('outputCommand').value = command;
+            
+            // Reset copy button
+            const copyBtn = document.getElementById('copyBtn');
+            copyBtn.textContent = '📋 Copy';
+            copyBtn.classList.remove('copied');
+        }
+
+        async function copyToClipboard() {
+            const output = document.getElementById('outputCommand');
+            const copyBtn = document.getElementById('copyBtn');
+            
+            try {
+                await navigator.clipboard.writeText(output.value);
+                copyBtn.textContent = '✅ Copied!';
+                copyBtn.classList.add('copied');
+                
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copy';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                output.select();
+                output.setSelectionRange(0, 99999);
+                document.execCommand('copy');
+                copyBtn.textContent = '✅ Copied!';
+                copyBtn.classList.add('copied');
+                
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copy';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('baseCommand').addEventListener('change', toggleCustomCommand);
+
+        // Initialize with one empty argument
+        if (document.getElementById('argumentsList').children.length === 0) {
+            addArgument();
+        }
+    </script>
+</body>
+</html> 
